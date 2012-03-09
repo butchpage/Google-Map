@@ -28,7 +28,7 @@
         // custom google maps code
 
     // Geocode an address: return array of latiude & longitude
-    function boj_gmap_geocode( $address ) {
+    function bpgm_gmap_geocode( $address ) {
       // Make Google Geocoding API URL 
       $map_url = 'http://maps.google.com/maps/api/geocode/json?address=';
       $map_url .= urlencode( $address ).'&sensor=false';
@@ -52,6 +52,39 @@
      
       // Return array of latitude & longitude
       return compact( 'lat', 'long' );
+    }
 
-    
+    // Convert a plain text address into latitude & longitude coordinates
+    // Retrieved from meta data if possible, or get fresh then cache otherwise
+    function bpgm_gmap_get_coords( $address = '2991 E White Star Ave. Anaheim CA 92806' ) {
+    // Current post id
+    global $id;
+
+    // Check if we already have this coordinates in the database
+    $saved = get_post_meta( $id, 'bpgm_gmap_addresses' );
+    foreach( (array) $saved as $_saved ) {
+      if( isset( $_saved[ 'address' ] ) && $_saved[ 'address' ] == $address ) {
+        extract( $_saved );
+        return compact( 'lat', 'long' );
+      }
+    }
+
+    // Coordinates not cached: let's fetch them from Google
+    $coords = bpgm_gmap_geocode( $address );
+    if( !$coords )
+      return false;
+
+    // Cache result in a post meta data
+    add_post_meta( $id, 'bpgm_gmap_addresses', array(
+        'address' => $address,
+        'lat' => $coords['lat'],
+        'long' => $coords['long']
+      )
+    );
+
+    extract( $coords );
+    return compact( 'lat', 'long' );
+
+    }
+
 ?>
